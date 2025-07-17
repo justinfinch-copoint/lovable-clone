@@ -2,10 +2,24 @@
 
 import { useState, useEffect } from 'react'
 import { CodeInput } from './CodeInput'
+import { MessageDisplay } from './MessageDisplay'
+import { SDKMessage } from '@anthropic-ai/claude-code'
+
+interface BuildResult {
+  success: boolean
+  messages: SDKMessage[]
+  filesCreated: string[]
+  codeGenerated: Record<string, string>
+  summary: string
+  error?: string
+}
 
 export function Hero() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [bootSequence, setBootSequence] = useState(0)
+  const [messages, setMessages] = useState<SDKMessage[]>([])
+  const [buildResult, setBuildResult] = useState<BuildResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -18,13 +32,35 @@ export function Hero() {
 
   const handleGenerate = async (prompt: string) => {
     setIsGenerating(true)
+    setError(null)
+    setMessages([])
+    setBuildResult(null)
+    
     try {
-      // TODO: Integrate with buildWithClaude function
-      console.log('Generating code for:', prompt)
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate code')
+      }
+
+      const result: BuildResult = await response.json()
+      
+      if (result.success) {
+        setMessages(result.messages)
+        setBuildResult(result)
+      } else {
+        setError(result.error || 'Generation failed')
+      }
     } catch (error) {
       console.error('Error generating code:', error)
+      setError(error instanceof Error ? error.message : 'Unknown error occurred')
     } finally {
       setIsGenerating(false)
     }
@@ -140,6 +176,14 @@ export function Hero() {
                     </div>
                   </div>
                 </div>
+
+                {/* Message Display */}
+                <MessageDisplay 
+                  messages={messages}
+                  isGenerating={isGenerating}
+                  error={error}
+                  buildResult={buildResult}
+                />
 
                 {/* System Status */}
                 <div className="mt-12 text-xs opacity-50 text-center">
