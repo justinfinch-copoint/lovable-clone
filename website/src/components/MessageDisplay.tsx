@@ -22,14 +22,7 @@ export function MessageDisplay({ messages, isGenerating, error, buildResult }: M
   return (
     <div className="mt-8 space-y-4">
       {/* Messages Display */}
-      <div className="terminal-window">
-        <div className="terminal-header">
-          <span>CLAUDE AI OUTPUT</span>
-          <span className="text-xs">
-            {isGenerating ? '[GENERATING...]' : '[READY]'}
-          </span>
-        </div>
-        <div className="p-4 max-h-96 overflow-y-auto">
+      <div className="p-4 max-h-96 overflow-y-auto">
           {/* Error Display */}
           {error && (
             <div className="mb-4">
@@ -88,16 +81,10 @@ export function MessageDisplay({ messages, isGenerating, error, buildResult }: M
             </div>
           )}
         </div>
-      </div>
 
       {/* Build Results */}
       {buildResult && buildResult.success && (
-        <div className="terminal-window">
-          <div className="terminal-header">
-            <span>BUILD RESULTS</span>
-            <span className="text-xs">[SUCCESS]</span>
-          </div>
-          <div className="p-4 space-y-4">
+        <div className="p-4 space-y-4">
             {/* Files Created */}
             {buildResult.filesCreated.length > 0 && (
               <div>
@@ -140,7 +127,6 @@ export function MessageDisplay({ messages, isGenerating, error, buildResult }: M
                 </div>
               </div>
             )}
-          </div>
         </div>
       )}
     </div>
