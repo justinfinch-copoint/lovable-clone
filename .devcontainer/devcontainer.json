@@ -1,12 +1,23 @@
 {
   "name": "Lovable Clone Dev Container",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "args": {
-      "TZ": "${localEnv:TZ:America/Los_Angeles}"
-    }
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "nodeGypDependencies": true,
+      "version": "lts"
+    },
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "installOhMyZsh": true,
+      "username": "vscode",
+      "userUid": "automatic",
+      "userGid": "automatic"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "runArgs": ["--cap-add=NET_ADMIN", "--cap-add=NET_RAW"],
   "customizations": {
     "vscode": {
       "extensions": [
@@ -60,20 +71,18 @@
         "typescript.updateImportsOnFileMove.enabled": "always",
         "javascript.updateImportsOnFileMove.enabled": "always"
       }
+    },
+    "mcp": {
+      "servers": {
+        "context7": {
+          "type": "stdio",
+          "command": "npx",
+          "args": ["-y", "@upstash/context7-mcp"]
+        }
+      }
     }
   },
-  "remoteUser": "node",
-  "mounts": [
-    "source=claude-code-bashhistory,target=/commandhistory,type=volume",
-    "source=claude-code-config,target=/home/node/.claude,type=volume"
-  ],
-  "remoteEnv": {
-    "NODE_OPTIONS": "--max-old-space-size=4096",
-    "CLAUDE_CONFIG_DIR": "/home/node/.claude",
-    "POWERLEVEL9K_DISABLE_GITSTATUS": "true"
-  },
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
-  "workspaceFolder": "/workspace",
+  "remoteUser": "vscode",
   "forwardPorts": [5173, 3000, 8080],
   "portsAttributes": {
     "5173": {
@@ -85,5 +94,5 @@
       "onAutoForward": "notify"
     }
   },
-  "postCreateCommand": ""
+  "postCreateCommand": "bash .devcontainer/post-create.sh"
 }
