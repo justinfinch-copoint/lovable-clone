@@ -44,7 +44,7 @@ export function Hero() {
                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
               </div>
-              <div className="text-xs">LOVABLE-CLONE v1.0.0</div>
+              <div className="text-xs">GAMEABLE v1.0.0</div>
               <div className="text-xs">[SYSTEM READY]</div>
             </div>
 
@@ -61,12 +61,12 @@ export function Hero() {
               <div className="mb-8 text-center">
                 <pre className="ascii-art text-xs sm:text-sm inline-block">
 {`
- __     ____  _  _  ____  ____  __    ____ 
-(  )   (  _ \\( \\/ )(  _ \\(  _ \\(  )  (  __)
-/ (_/\\  )(_) )\\  /  )   / ) _ (/ (_/\\ )__)  
-\\____/ (____/ (__) (__\\_)(____/\\____/(____)
-                                            
-         C L O N E   v1.0.0                 
+  ____    __    __  __  ____    __    ____  __    ____ 
+ (  _ \\  /__\  (  \/  )( ___)  /__\  (  _ \\(  )  ( ___)
+  )(_) )/(__)\\ )    (  )__)  /(__)\\ ) _ ( )(____) )__) 
+ (____/(__)(__)(_/\\_)(____)(__)(__)(_____)(____)(____)
+                                                       
+           G A M E A B L E   v1.0.0                   
 `}
                 </pre>
               </div>
@@ -78,16 +78,16 @@ export function Hero() {
                     SYSTEM INITIALIZED
                   </div>
                   <div className="text-amber-400 text-sm sm:text-base mb-4">
-                    AI-POWERED CODE GENERATION TERMINAL
+                    PHASER GAME DEVELOPMENT TERMINAL
                   </div>
                 </div>
 
                 <div className="max-w-2xl mx-auto mb-8">
                   <p className="terminal-text text-sm sm:text-base leading-relaxed mb-4">
-                    ENTER YOUR PROJECT DESCRIPTION TO GENERATE CODE.
+                    ENTER YOUR GAME DESCRIPTION TO GENERATE PHASER CODE.
                   </p>
                   <p className="terminal-text text-xs sm:text-sm opacity-70">
-                    SUPPORTED LANGUAGES: JAVASCRIPT, TYPESCRIPT, PYTHON, GO, RUST
+                    POWERED BY PHASER 3 | JAVASCRIPT | TYPESCRIPT | HTML5 CANVAS
                   </p>
                 </div>
 
@@ -107,9 +107,9 @@ export function Hero() {
                         <span className="text-amber-400 mr-2">[FEATURE]</span>
                         <span className="text-xs opacity-70">001</span>
                       </div>
-                      <h3 className="terminal-text font-bold mb-2">RAPID GENERATION</h3>
+                      <h3 className="terminal-text font-bold mb-2">RAPID PROTOTYPING</h3>
                       <p className="text-xs opacity-70">
-                        EXECUTE CODE GENERATION IN &lt;1000MS
+                        GENERATE PLAYABLE GAMES IN SECONDS
                       </p>
                     </div>
                   </div>
@@ -120,9 +120,9 @@ export function Hero() {
                         <span className="text-amber-400 mr-2">[FEATURE]</span>
                         <span className="text-xs opacity-70">002</span>
                       </div>
-                      <h3 className="terminal-text font-bold mb-2">CLAUDE AI CORE</h3>
+                      <h3 className="terminal-text font-bold mb-2">PHASER OPTIMIZED</h3>
                       <p className="text-xs opacity-70">
-                        POWERED BY ANTHROPIC CLAUDE SDK
+                        BUILT FOR PHASER 3 GAME DEVELOPMENT
                       </p>
                     </div>
                   </div>
@@ -133,9 +133,9 @@ export function Hero() {
                         <span className="text-amber-400 mr-2">[FEATURE]</span>
                         <span className="text-xs opacity-70">003</span>
                       </div>
-                      <h3 className="terminal-text font-bold mb-2">FULL CONTROL</h3>
+                      <h3 className="terminal-text font-bold mb-2">GAME READY</h3>
                       <p className="text-xs opacity-70">
-                        MODIFY GENERATED CODE AS NEEDED
+                        COMPLETE GAMES WITH PHYSICS & ASSETS
                       </p>
                     </div>
                   </div>

@@ -36,7 +36,7 @@ module.exports = {
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'lovable-gradient': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'gameable-gradient': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         'soft-gradient': 'linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #4facfe 100%)',
         'purple-blue': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       },

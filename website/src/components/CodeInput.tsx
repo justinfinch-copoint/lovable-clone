@@ -80,7 +80,7 @@ export function CodeInput({ onGenerate, isLoading }: CodeInputProps) {
         <div className="terminal-window">
           <div className="p-4">
             <div className="flex items-start">
-              <span className="terminal-prompt mr-2 mt-1">root@lovable</span>
+              <span className="terminal-prompt mr-2 mt-1">root@gameable</span>
               <div className="flex-1 relative">
                 <textarea
                   ref={inputRef}
@@ -155,10 +155,10 @@ export function CodeInput({ onGenerate, isLoading }: CodeInputProps) {
           <div className="text-amber-400 text-xs mb-3">[QUICK EXAMPLES]</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {[
-              "TODO APP WITH REACT AND LOCAL STORAGE",
-              "LANDING PAGE FOR SAAS PRODUCT",
-              "TIC-TAC-TOE GAME IN VANILLA JS",
-              "CONTACT FORM WITH EMAIL VALIDATION"
+              "SIMPLE PLATFORMER GAME WITH PHASER",
+              "SPACE SHOOTER GAME WITH PHASER",
+              "PUZZLE GAME WITH PHASER AND PHYSICS",
+              "ARCADE GAME WITH PHASER ANIMATIONS"
             ].map((example, index) => (
               <button
                 key={index}

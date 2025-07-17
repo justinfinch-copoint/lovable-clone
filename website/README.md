@@ -1,13 +1,14 @@
-# Lovable Clone
+# Gameable
 
-A beautiful AI-powered code generation website built with Next.js, inspired by Lovable's design aesthetic.
+A powerful Phaser game development terminal built with Next.js and Claude SDK, designed for rapid game prototyping and creation.
 
 ## Features
 
-- 🎨 Beautiful gradient UI with soft, modern design
-- 💬 Interactive text input for code generation prompts
-- ⚡ Fast, responsive interface
-- 🤖 Integration ready for Claude Code SDK
+- 🎮 Phaser 3 game development terminal interface
+- 🚀 Rapid game prototyping with AI assistance
+- 🎯 Game-specific code generation prompts
+- ⚡ Fast, responsive retro terminal UI
+- 🤖 Powered by Claude SDK for intelligent game creation
 
 ## Getting Started
 
@@ -28,15 +29,17 @@ npm run dev
 - **Next.js 14** - React framework with App Router
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Utility-first CSS framework
-- **Inter Font** - Modern typography
+- **Claude SDK** - AI-powered code generation
+- **Phaser 3** - Target framework for game development
 
 ## Design Features
 
-- Soft gradient backgrounds
-- Glassmorphism effects
-- Smooth animations and transitions
-- Responsive design
-- Beautiful color palette inspired by Lovable
+- Retro CRT terminal aesthetic
+- Green/amber color scheme
+- Monospace typography (JetBrains Mono, IBM Plex Mono)
+- Scanline and flicker effects
+- Blinking cursor animations
+- Terminal window styling
 
 ## Project Structure
 
@@ -53,8 +56,9 @@ src/
 
 ## Next Steps
 
-- Integrate with Claude Code SDK for actual code generation
-- Add result display components
-- Implement file download functionality
-- Add user authentication
-- Create project management features
+- Integrate with Claude Code SDK for Phaser game generation
+- Add game preview and testing capabilities
+- Implement asset management for sprites and sounds
+- Add physics configuration options
+- Create game export functionality
+- Add multiplayer game templates
