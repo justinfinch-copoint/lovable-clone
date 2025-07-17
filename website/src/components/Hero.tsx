@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { RecoilRoot } from 'recoil'
 import { ChainlitChat } from './ChainlitChat'
 
 export function Hero() {
@@ -39,7 +38,6 @@ export function Hero() {
   }
 
   return (
-    <RecoilRoot>
       <div className="min-h-screen">
       {/* Terminal Header */}
       <div className="p-6 sm:p-8 lg:p-12">
@@ -114,6 +112,5 @@ export function Hero() {
         </div>
       </div>
       </div>
-    </RecoilRoot>
   )
 }

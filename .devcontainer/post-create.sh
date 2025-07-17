@@ -5,6 +5,10 @@
 
 echo "🚀 Running post-create setup..."
 
+# Install Claude Code globally
+echo "📦 Installing Claude Code..."
+npm install -g @anthropic-ai/claude-code
+
 # Install Node.js dependencies for website
 echo "📦 Installing Node.js dependencies..."
 cd website && npm install && cd ..

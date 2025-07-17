@@ -22,6 +22,9 @@ from plugins.phaser_tools import PhaserToolsPlugin
 async def start():
     """Initialize the chat session"""
     try:
+        # Clear any existing session data first
+        cl.user_session.clear()
+        
         # Create a welcome message with the app's capabilities
         welcome_message = """👋 Welcome to the **Phaser Game Generator**!
 
@@ -96,62 +99,49 @@ What kind of game would you like me to create today?"""
 @cl.on_message
 async def main(message: cl.Message):
     """Handle incoming messages"""
-    game_agent = cl.user_session.get("game_agent")
-    
-    if not game_agent:
-        await cl.Message(
-            content="❌ Session not properly initialized. Please refresh the page."
-        ).send()
-        return
-    
-    # Create a thinking step
-    async with cl.Step(name="🤔 Planning Game Development") as step:
-        step.output = "Analyzing your game request and planning the implementation..."
-    
-    # Create a code generation step
-    async with cl.Step(name="⚡ Generating Game Code") as step:
-        step.output = "Creating your Phaser 3 game..."
+    try:
+        game_agent = cl.user_session.get("game_agent")
         
-        try:
-            # Generate the game using our agent
-            result = await game_agent.generate_game(message.content)
-            
-            if result["success"]:
-                step.output = f"✅ Game generated successfully! {result['summary']}"
-                
-                # Show the generated game code
-                await cl.Message(
-                    content=f"🎮 **Game Created!**\n\n{result['summary']}",
-                    elements=[
-                        cl.Text(
-                            name=result["filename"],
-                            content=result["game_code"],
-                            display="inline",
-                            language="html"
-                        )
-                    ]
-                ).send()
-                
-                # Save the file using the plugin
-                async with cl.Step(name="💾 Saving Game File") as save_step:
-                    # The file operations plugin should have already saved it
-                    save_step.output = f"Game saved as {result['filename']}"
-                
-                await cl.Message(
-                    content="🚀 **Your game is ready!** Copy the code above and save it as an HTML file to play your game."
-                ).send()
-                
-            else:
-                step.output = "❌ Failed to generate game"
-                await cl.Message(
-                    content="❌ Sorry, I couldn't generate the game. Please try again with a different request."
-                ).send()
-                
-        except Exception as e:
-            step.output = f"❌ Error: {str(e)}"
+        if not game_agent:
             await cl.Message(
-                content=f"❌ An error occurred while generating the game: {str(e)}"
+                content="❌ Session not properly initialized. Please refresh the page."
             ).send()
+            return
+        
+        # Send initial status message
+        status_msg = await cl.Message(content="🤔 Planning your game development...").send()
+        
+        # Generate the game using our agent
+        result = await game_agent.generate_game(message.content)
+        
+        if result["success"]:
+            # Show the generated game code
+            await cl.Message(
+                content=f"🎮 **Game Created!**\n\n{result['summary']}",
+                elements=[
+                    cl.Text(
+                        name=result["filename"],
+                        content=result["game_code"],
+                        display="inline",
+                        language="html"
+                    )
+                ]
+            ).send()
+            
+            await cl.Message(
+                content="🚀 **Your game is ready!** Copy the code above and save it as an HTML file to play your game."
+            ).send()
+            
+        else:
+            await cl.Message(
+                content="❌ Sorry, I couldn't generate the game. Please try again with a different request."
+            ).send()
+            
+    except Exception as e:
+        print(f"Error in message handler: {e}")
+        await cl.Message(
+            content=f"❌ An error occurred while generating the game: {str(e)}"
+        ).send()
 
 
 @cl.on_stop

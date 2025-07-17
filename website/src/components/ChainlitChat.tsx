@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { RecoilRoot } from 'recoil'
-import { useChatSession, useChatMessages, useChatInteract } from '@chainlit/react-client'
+import { ChainlitAPI, ChainlitContext, useChatSession, useChatMessages, useChatInteract } from '@chainlit/react-client'
 
 interface ChainlitChatProps {
   onGameGenerated?: (gameCode: string, filename: string) => void
@@ -74,7 +74,7 @@ function ChainlitChatInner({ onGameGenerated }: ChainlitChatProps) {
       }
       setIsConnected(false)
     }
-  }, [connect, disconnect, session])
+  }, [])
 
   // Extract game code from messages when a game is generated
   useEffect(() => {
@@ -201,5 +201,14 @@ function MessageInput({ onSendMessage }: MessageInputProps) {
 }
 
 export function ChainlitChat({ onGameGenerated }: ChainlitChatProps) {
-  return <ChainlitChatInner onGameGenerated={onGameGenerated} />
+  // Initialize Chainlit API client
+  const apiClient = new ChainlitAPI('http://localhost:8000', 'webapp')
+  
+  return (
+    <ChainlitContext.Provider value={apiClient}>
+      <RecoilRoot>
+        <ChainlitChatInner onGameGenerated={onGameGenerated} />
+      </RecoilRoot>
+    </ChainlitContext.Provider>
+  )
 }
