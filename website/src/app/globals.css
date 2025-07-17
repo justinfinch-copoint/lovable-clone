@@ -1,0 +1,287 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Fira+Code:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Terminal Colors - Retro CRT Theme */
+  --term-bg: 13, 17, 13;
+  --term-bg-light: 26, 34, 26;
+  --term-green: 51, 255, 51;
+  --term-green-dim: 0, 170, 0;
+  --term-amber: 255, 176, 0;
+  --term-amber-dim: 205, 141, 0;
+  --term-cyan: 0, 255, 255;
+  --term-white: 204, 204, 204;
+  --term-red: 255, 0, 80;
+  --term-border: 51, 255, 51;
+  
+  /* CRT Glow Effects */
+  --glow-green: 0 0 10px rgba(51, 255, 51, 0.5), 0 0 20px rgba(51, 255, 51, 0.3), 0 0 30px rgba(51, 255, 51, 0.1);
+  --glow-amber: 0 0 10px rgba(255, 176, 0, 0.5), 0 0 20px rgba(255, 176, 0, 0.3), 0 0 30px rgba(255, 176, 0, 0.1);
+  
+  /* Terminal Font Stack */
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Fira Code', 'Courier New', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: var(--font-mono);
+  cursor: default;
+}
+
+body {
+  color: rgb(var(--term-green));
+  background: rgb(var(--term-bg));
+  position: relative;
+  min-height: 100vh;
+}
+
+/* CRT Monitor Effect */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15),
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* CRT Flicker Effect */
+@keyframes flicker {
+  0% {
+    opacity: 0.27861;
+  }
+  5% {
+    opacity: 0.34769;
+  }
+  10% {
+    opacity: 0.23604;
+  }
+  15% {
+    opacity: 0.90626;
+  }
+  20% {
+    opacity: 0.18128;
+  }
+  25% {
+    opacity: 0.83891;
+  }
+  30% {
+    opacity: 0.65583;
+  }
+  35% {
+    opacity: 0.67807;
+  }
+  40% {
+    opacity: 0.26559;
+  }
+  45% {
+    opacity: 0.84693;
+  }
+  50% {
+    opacity: 0.96019;
+  }
+  55% {
+    opacity: 0.08594;
+  }
+  60% {
+    opacity: 0.20313;
+  }
+  65% {
+    opacity: 0.71988;
+  }
+  70% {
+    opacity: 0.53455;
+  }
+  75% {
+    opacity: 0.37288;
+  }
+  80% {
+    opacity: 0.71428;
+  }
+  85% {
+    opacity: 0.70419;
+  }
+  90% {
+    opacity: 0.7003;
+  }
+  95% {
+    opacity: 0.36108;
+  }
+  100% {
+    opacity: 0.24387;
+  }
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(18, 16, 16, 0.1);
+  opacity: 0;
+  z-index: 9998;
+  pointer-events: none;
+  animation: flicker 0.15s infinite;
+}
+
+a {
+  color: rgb(var(--term-cyan));
+  text-decoration: none;
+  text-shadow: var(--glow-green);
+}
+
+a:hover {
+  color: rgb(var(--term-amber));
+  text-shadow: var(--glow-amber);
+  text-decoration: underline;
+}
+
+/* Terminal Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+  background: rgb(var(--term-bg));
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--term-bg));
+  border: 1px solid rgb(var(--term-green-dim));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--term-green-dim));
+  border: 1px solid rgb(var(--term-green));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--term-green));
+  box-shadow: var(--glow-green);
+}
+
+/* Terminal Text Selection */
+::selection {
+  background: rgb(var(--term-green));
+  color: rgb(var(--term-bg));
+}
+
+/* Terminal Input Styles */
+input,
+textarea {
+  font-family: var(--font-mono);
+  background: rgb(var(--term-bg));
+  color: rgb(var(--term-green));
+  border: 1px solid rgb(var(--term-green-dim));
+  caret-color: rgb(var(--term-green));
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: rgb(var(--term-green));
+  box-shadow: var(--glow-green);
+}
+
+/* Terminal Button Base Styles */
+.terminal-btn {
+  @apply px-4 py-2 font-mono text-sm uppercase tracking-wider;
+  background: rgb(var(--term-bg));
+  color: rgb(var(--term-green));
+  border: 1px solid rgb(var(--term-green));
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.terminal-btn:hover {
+  background: rgb(var(--term-green));
+  color: rgb(var(--term-bg));
+  box-shadow: var(--glow-green);
+  transform: translateY(-2px);
+}
+
+.terminal-btn:active {
+  transform: translateY(0);
+}
+
+/* Terminal Window Style */
+.terminal-window {
+  background: rgb(var(--term-bg));
+  border: 2px solid rgb(var(--term-green));
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.terminal-header {
+  background: rgb(var(--term-green));
+  color: rgb(var(--term-bg));
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Blinking Cursor */
+@keyframes blink {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}
+
+.cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.2em;
+  background: rgb(var(--term-green));
+  animation: blink 1s infinite;
+  vertical-align: text-bottom;
+}
+
+/* Terminal Text Effects */
+.terminal-text {
+  font-family: var(--font-mono);
+  color: rgb(var(--term-green));
+  text-shadow: var(--glow-green);
+  letter-spacing: 0.05em;
+}
+
+.terminal-prompt::before {
+  content: "$ ";
+  color: rgb(var(--term-amber));
+  text-shadow: var(--glow-amber);
+}
+
+/* ASCII Art Container */
+.ascii-art {
+  font-family: var(--font-mono);
+  color: rgb(var(--term-green));
+  text-shadow: var(--glow-green);
+  white-space: pre;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+}

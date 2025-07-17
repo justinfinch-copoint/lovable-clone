@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(rm:*)"
+    ]
+  },
+  "tools": {
+    "read": {
+      "enabled": true
+    },
+    "write": {
+      "enabled": true
+    },
+    "edit": {
+      "enabled": true
+    },
+    "bash": {
+      "enabled": true
+    }
+  },
+  "confirmBeforeEdit": false,
+  "confirmBeforeWrite": false
+}
