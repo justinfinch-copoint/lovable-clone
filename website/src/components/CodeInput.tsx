@@ -22,14 +22,47 @@ export function CodeInput({ onGenerate, isLoading }: CodeInputProps) {
     const updateCursorPosition = () => {
       if (inputRef.current) {
         const { selectionStart } = inputRef.current
-        const textBeforeCursor = prompt.substring(0, selectionStart)
+        const textBeforeCursor = inputRef.current.value.substring(0, selectionStart)
         const lines = textBeforeCursor.split('\n')
         const currentLine = lines.length - 1
-        const currentColumn = lines[lines.length - 1].length
-        setCursorPosition({ line: currentLine, column: currentColumn })
+        const currentLineText = lines[currentLine] || ''
+        
+        // Create a temporary span to measure the actual width
+        const tempSpan = document.createElement('span')
+        tempSpan.style.visibility = 'hidden'
+        tempSpan.style.position = 'absolute'
+        tempSpan.style.fontSize = getComputedStyle(inputRef.current).fontSize
+        tempSpan.style.fontFamily = getComputedStyle(inputRef.current).fontFamily
+        tempSpan.style.fontWeight = getComputedStyle(inputRef.current).fontWeight
+        tempSpan.style.letterSpacing = getComputedStyle(inputRef.current).letterSpacing
+        tempSpan.style.whiteSpace = 'pre'  // Preserve spaces
+        tempSpan.textContent = currentLineText
+        
+        document.body.appendChild(tempSpan)
+        const textWidth = tempSpan.offsetWidth
+        document.body.removeChild(tempSpan)
+        
+        setCursorPosition({ 
+          line: currentLine, 
+          column: textWidth 
+        })
       }
     }
+    
+    // Update cursor position immediately
     updateCursorPosition()
+    
+    // Also update on any selection changes
+    const handleSelectionChange = () => {
+      requestAnimationFrame(updateCursorPosition)
+    }
+    
+    if (inputRef.current) {
+      inputRef.current.addEventListener('selectionchange', handleSelectionChange)
+      return () => {
+        inputRef.current?.removeEventListener('selectionchange', handleSelectionChange)
+      }
+    }
   }, [prompt])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,24 +120,56 @@ export function CodeInput({ onGenerate, isLoading }: CodeInputProps) {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  onKeyUp={() => {
+                  onKeyUp={(e) => {
                     if (inputRef.current) {
                       const { selectionStart } = inputRef.current
-                      const textBeforeCursor = prompt.substring(0, selectionStart)
+                      const textBeforeCursor = inputRef.current.value.substring(0, selectionStart)
                       const lines = textBeforeCursor.split('\n')
                       const currentLine = lines.length - 1
-                      const currentColumn = lines[lines.length - 1].length
-                      setCursorPosition({ line: currentLine, column: currentColumn })
+                      const currentLineText = lines[currentLine] || ''
+                      
+                      // Measure actual text width
+                      const tempSpan = document.createElement('span')
+                      tempSpan.style.visibility = 'hidden'
+                      tempSpan.style.position = 'absolute'
+                      tempSpan.style.fontSize = getComputedStyle(inputRef.current).fontSize
+                      tempSpan.style.fontFamily = getComputedStyle(inputRef.current).fontFamily
+                      tempSpan.style.fontWeight = getComputedStyle(inputRef.current).fontWeight
+                      tempSpan.style.letterSpacing = getComputedStyle(inputRef.current).letterSpacing
+                      tempSpan.style.whiteSpace = 'pre'  // Preserve spaces
+                      tempSpan.textContent = currentLineText
+                      
+                      document.body.appendChild(tempSpan)
+                      const textWidth = tempSpan.offsetWidth
+                      document.body.removeChild(tempSpan)
+                      
+                      setCursorPosition({ line: currentLine, column: textWidth })
                     }
                   }}
                   onClick={() => {
                     if (inputRef.current) {
                       const { selectionStart } = inputRef.current
-                      const textBeforeCursor = prompt.substring(0, selectionStart)
+                      const textBeforeCursor = inputRef.current.value.substring(0, selectionStart)
                       const lines = textBeforeCursor.split('\n')
                       const currentLine = lines.length - 1
-                      const currentColumn = lines[lines.length - 1].length
-                      setCursorPosition({ line: currentLine, column: currentColumn })
+                      const currentLineText = lines[currentLine] || ''
+                      
+                      // Measure actual text width
+                      const tempSpan = document.createElement('span')
+                      tempSpan.style.visibility = 'hidden'
+                      tempSpan.style.position = 'absolute'
+                      tempSpan.style.fontSize = getComputedStyle(inputRef.current).fontSize
+                      tempSpan.style.fontFamily = getComputedStyle(inputRef.current).fontFamily
+                      tempSpan.style.fontWeight = getComputedStyle(inputRef.current).fontWeight
+                      tempSpan.style.letterSpacing = getComputedStyle(inputRef.current).letterSpacing
+                      tempSpan.style.whiteSpace = 'pre'  // Preserve spaces
+                      tempSpan.textContent = currentLineText
+                      
+                      document.body.appendChild(tempSpan)
+                      const textWidth = tempSpan.offsetWidth
+                      document.body.removeChild(tempSpan)
+                      
+                      setCursorPosition({ line: currentLine, column: textWidth })
                     }
                   }}
                   placeholder="ENTER COMMAND OR PROJECT DESCRIPTION..."
@@ -119,7 +184,7 @@ export function CodeInput({ onGenerate, isLoading }: CodeInputProps) {
                 />
                 {!isLoading && <span className="cursor absolute" style={{ 
                   top: `${cursorPosition.line * 1.5}em`,
-                  left: `${cursorPosition.column * 0.6}ch`,
+                  left: `${cursorPosition.column}px`,
                   height: '1.2em'
                 }}></span>}
               </div>
