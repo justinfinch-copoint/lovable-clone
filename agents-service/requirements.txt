@@ -1,0 +1,22 @@
+# Core dependencies
+semantic-kernel>=1.0.0
+chainlit>=2.0.0
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+python-dotenv>=1.0.0
+
+# Semantic Kernel connectors
+semantic-kernel[openai]
+
+# Additional utilities
+aiofiles>=0.20.0
+pydantic>=2.0.0
+httpx>=0.20.0
+websockets>=10.0
+python-multipart>=0.0.5
+
+# Development dependencies
+pytest>=7.0.0
+pytest-asyncio>=0.20.0
+black>=22.0.0
+ruff>=0.1.0

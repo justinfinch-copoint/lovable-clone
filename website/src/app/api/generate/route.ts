@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { buildWithClaude } from '../../../lib/buildWithClaude'
+import { buildWithAgent } from '../../../lib/agentClient'
+
+// LEGACY: This route is no longer used since we migrated to Chainlit React
+// Game generation now happens directly through Chainlit WebSocket connection
+// Keeping this for backwards compatibility or alternative API access
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,22 +16,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Enhance the prompt to ensure Phaser 3 game development
-    const enhancedPrompt = `Create a Phaser 3 game: ${prompt}
-
-SPECIFIC REQUIREMENTS:
-- Build a complete HTML5 game using Phaser 3 framework
-- Include proper game structure with scenes, physics, and input handling
-- Make the game playable with clear objectives and win/lose conditions
-- Ensure responsive design that works on desktop and mobile
-- Add basic UI elements like score display and game over screen
-- Use appropriate Phaser features for the game type (physics, sprites, animations)
-- Include comments explaining the game mechanics
-
-Save the complete game as an HTML file that can be opened directly in a browser.`
-
-    // Call the buildWithClaude function with enhanced prompt
-    const result = await buildWithClaude(enhancedPrompt)
+    // Call the buildWithAgent function with raw prompt
+    // Python agents already have comprehensive Phaser 3 system prompts
+    const result = await buildWithAgent(prompt)
 
     return NextResponse.json(result)
   } catch (error) {

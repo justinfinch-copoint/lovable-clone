@@ -1,25 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CodeInput } from './CodeInput'
-import { MessageDisplay } from './MessageDisplay'
-import { SDKMessage } from '@anthropic-ai/claude-code'
-
-interface BuildResult {
-  success: boolean
-  messages: SDKMessage[]
-  filesCreated: string[]
-  codeGenerated: Record<string, string>
-  summary: string
-  error?: string
-}
+import { ChainlitChat } from './ChainlitChat'
 
 export function Hero() {
-  const [isGenerating, setIsGenerating] = useState(false)
   const [bootSequence, setBootSequence] = useState(0)
-  const [messages, setMessages] = useState<SDKMessage[]>([])
-  const [buildResult, setBuildResult] = useState<BuildResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [generatedGame, setGeneratedGame] = useState<{
+    code: string
+    filename: string
+  } | null>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -30,87 +19,97 @@ export function Hero() {
     return () => clearTimeout(timer)
   }, [bootSequence])
 
-  const handleGenerate = async (prompt: string) => {
-    setIsGenerating(true)
-    setError(null)
-    setMessages([])
-    setBuildResult(null)
+  const handleGameGenerated = (gameCode: string, filename: string) => {
+    setGeneratedGame({ code: gameCode, filename })
+  }
+
+  const downloadGame = () => {
+    if (!generatedGame) return
     
-    try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate code')
-      }
-
-      const result: BuildResult = await response.json()
-      
-      if (result.success) {
-        setMessages(result.messages)
-        setBuildResult(result)
-      } else {
-        setError(result.error || 'Generation failed')
-      }
-    } catch (error) {
-      console.error('Error generating code:', error)
-      setError(error instanceof Error ? error.message : 'Unknown error occurred')
-    } finally {
-      setIsGenerating(false)
-    }
+    const blob = new Blob([generatedGame.code], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = generatedGame.filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   return (
     <div className="min-h-screen">
-      {/* Terminal Body */}
-      <div className="p-6 sm:p-8 lg:p-12 min-h-screen">
-              {/* Boot Sequence */}
-              <div className="mb-8 text-xs sm:text-sm terminal-text opacity-70">
-                {bootSequence >= 1 && <div>INITIALIZING SYSTEM...</div>}
-                {bootSequence >= 2 && <div>LOADING AI MODULES...</div>}
-                {bootSequence >= 3 && <div>SYSTEM READY. TYPE 'HELP' FOR COMMANDS.</div>}
-              </div>
+      {/* Terminal Header */}
+      <div className="p-6 sm:p-8 lg:p-12">
+        {/* Boot Sequence */}
+        <div className="mb-8 text-xs sm:text-sm terminal-text opacity-70">
+          {bootSequence >= 1 && <div>INITIALIZING SYSTEM...</div>}
+          {bootSequence >= 2 && <div>LOADING AI MODULES...</div>}
+          {bootSequence >= 3 && <div>SYSTEM READY. GAME DEVELOPER AGENT ONLINE.</div>}
+        </div>
 
-              {/* ASCII Art Logo */}
-              <div className="mb-8">
-                <pre className="ascii-art text-xs sm:text-sm">
+        {/* ASCII Art Logo */}
+        <div className="mb-8">
+          <pre className="ascii-art text-xs sm:text-sm">
 {`
   ____    __    __  __  ____    __    ____  __    ____ 
- (  _ \\  /__\  (  \/  )( ___)  /__\  (  _ \\(  )  ( ___)
+ (  _ \\  /__\  (  \\/  )( ___)  /__\  (  _ \\(  )  ( ___)
   )(_) )/(__)\\ )    (  )__)  /(__)\\ ) _ ( )(____) )__) 
  (____/(__)(__)(_/\\_)(____)(__)(__)(_____)(____)(____)
                                                        
-           G A M E A B L E   v1.0.0                   
+           G A M E A B L E   v2.0.0                   
 `}
-                </pre>
-              </div>
+          </pre>
+        </div>
 
-              {/* Code Input */}
-              <div className="mb-8">
-                <CodeInput 
-                  onGenerate={handleGenerate} 
-                  isLoading={isGenerating}
+        {/* Game Generation Interface */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Chainlit Chat Interface */}
+          <div className="h-96 lg:h-[600px]">
+            <h3 className="text-green-400 mb-4 font-mono">🤖 AI Game Developer</h3>
+            <ChainlitChat onGameGenerated={handleGameGenerated} />
+          </div>
+
+          {/* Generated Game Preview */}
+          <div className="h-96 lg:h-[600px]">
+            <h3 className="text-green-400 mb-4 font-mono">🎮 Generated Game</h3>
+            {generatedGame ? (
+              <div className="h-full bg-black border border-green-500 rounded p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-green-300 text-sm">📄 {generatedGame.filename}</span>
+                  <button
+                    onClick={downloadGame}
+                    className="bg-green-900 hover:bg-green-800 text-green-100 px-3 py-1 rounded border border-green-500 text-sm transition-colors"
+                  >
+                    ⬇️ Download
+                  </button>
+                </div>
+                
+                {/* Game Preview - render the HTML in an iframe */}
+                <iframe
+                  srcDoc={generatedGame.code}
+                  className="w-full h-[calc(100%-60px)] border border-green-600 rounded bg-white"
+                  title="Generated Game Preview"
+                  sandbox="allow-scripts"
                 />
               </div>
-
-              {/* Message Display */}
-              <MessageDisplay 
-                messages={messages}
-                isGenerating={isGenerating}
-                error={error}
-                buildResult={buildResult}
-              />
-
-              {/* System Status */}
-              <div className="mt-12 text-xs opacity-50">
-                <div>CPU: 98.2% | MEM: 16.7GB | UPTIME: 99.99%</div>
+            ) : (
+              <div className="h-full bg-black border border-green-500 rounded flex items-center justify-center">
+                <div className="text-green-600 text-center">
+                  <div className="text-4xl mb-4">🎮</div>
+                  <div>Your generated game will appear here</div>
+                  <div className="text-sm mt-2">Start chatting with the AI to create a game!</div>
+                </div>
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* System Status */}
+        <div className="mt-8 text-xs terminal-text opacity-50 flex justify-between">
+          <span>AGENTS: ONLINE | MEMORY: 89% | CPU: 45%</span>
+          <span>CHAINLIT v2.0 | PHASER v3.70</span>
+        </div>
       </div>
     </div>
   )

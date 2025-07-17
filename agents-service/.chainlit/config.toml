@@ -1,0 +1,12 @@
+[project]
+# Enable React integration
+enable_telemetry = false
+
+[UI]
+# Chainlit React integration settings
+name = "Game Developer Agent"
+show_readme_as_default = false
+default_collapse_content = true
+
+[meta]
+generated_by = "1.0.0"
