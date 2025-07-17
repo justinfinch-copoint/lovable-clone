@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "agents:start": "cd ../agents-service && python -m chainlit run app.py -w --port 8000",
+    "agents:start": "cd ../agents-service && python -m chainlit run app.py --headless --port 8000",
     "agents:api": "cd ../agents-service && python api_server.py",
     "dev:full": "concurrently \"npm run dev\" \"npm run agents:start\" \"npm run agents:api\"",
     "dev:with-agents": "npm run dev:full"

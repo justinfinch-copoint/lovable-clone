@@ -17,7 +17,7 @@ load_dotenv()
 from agents.game_developer_agent import GameDeveloperAgent
 from plugins.file_operations import FileOperationsPlugin
 from plugins.phaser_tools import PhaserToolsPlugin
-from plugins.claude_code_bridge import ClaudeCodeBridge
+# Claude Code bridge removed - using Semantic Kernel agent only
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -71,11 +71,11 @@ kernel: Optional[Kernel] = None
 game_agent: Optional[GameDeveloperAgent] = None
 file_ops_plugin: Optional[FileOperationsPlugin] = None
 phaser_tools_plugin: Optional[PhaserToolsPlugin] = None
-claude_code_bridge: Optional[ClaudeCodeBridge] = None
+# claude_code_bridge removed
 
 def initialize_services():
     """Initialize Semantic Kernel and agents"""
-    global kernel, game_agent, file_ops_plugin, phaser_tools_plugin, claude_code_bridge
+    global kernel, game_agent, file_ops_plugin, phaser_tools_plugin
     
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY not found in environment variables")
@@ -95,12 +95,10 @@ def initialize_services():
     # Initialize plugins
     file_ops_plugin = FileOperationsPlugin(output_dir=os.getenv("OUTPUT_DIR", "./generated_games"))
     phaser_tools_plugin = PhaserToolsPlugin()
-    claude_code_bridge = ClaudeCodeBridge()
     
     # Add plugins to kernel
     kernel.add_plugin(file_ops_plugin, plugin_name="FileOperations")
     kernel.add_plugin(phaser_tools_plugin, plugin_name="PhaserTools")
-    kernel.add_plugin(claude_code_bridge, plugin_name="ClaudeCode")
     
     # Initialize game developer agent
     game_agent = GameDeveloperAgent(kernel, service_id)
@@ -125,7 +123,6 @@ async def health_check():
             "game_generation": kernel is not None and game_agent is not None,
             "file_operations": file_ops_plugin is not None,
             "phaser_tools": phaser_tools_plugin is not None,
-            "claude_code_sdk": claude_code_bridge is not None,
         }
     )
 

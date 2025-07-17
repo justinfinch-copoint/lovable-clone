@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { RecoilRoot } from 'recoil'
 import { ChainlitChat } from './ChainlitChat'
 
 export function Hero() {
@@ -38,7 +39,8 @@ export function Hero() {
   }
 
   return (
-    <div className="min-h-screen">
+    <RecoilRoot>
+      <div className="min-h-screen">
       {/* Terminal Header */}
       <div className="p-6 sm:p-8 lg:p-12">
         {/* Boot Sequence */}
@@ -111,6 +113,7 @@ export function Hero() {
           <span>CHAINLIT v2.0 | PHASER v3.70</span>
         </div>
       </div>
-    </div>
+      </div>
+    </RecoilRoot>
   )
 }

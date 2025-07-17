@@ -10,12 +10,26 @@ interface ChainlitChatProps {
 
 function ChainlitChatInner({ onGameGenerated }: ChainlitChatProps) {
   const [isConnected, setIsConnected] = useState(false)
+  const [connectionError, setConnectionError] = useState<string | null>(null)
   const { connect, disconnect, session } = useChatSession()
   const { messages } = useChatMessages()
   const { sendMessage } = useChatInteract()
 
   useEffect(() => {
+    let retryCount = 0
+    const maxRetries = 5
+    let retryTimeout: NodeJS.Timeout | null = null
+    let isConnecting = false
+
     const connectToChainlit = async () => {
+      if (isConnecting) return
+      isConnecting = true
+      // Don't spam console if we've already failed multiple times
+      if (retryCount >= maxRetries) {
+        setConnectionError('Max retry attempts reached. Please check if the Chainlit service is running on port 8000.')
+        return
+      }
+
       try {
         await connect({
           chainlitServer: 'http://localhost:8000',
@@ -24,19 +38,43 @@ function ChainlitChatInner({ onGameGenerated }: ChainlitChatProps) {
           // accessToken: 'Bearer YOUR_TOKEN'
         })
         setIsConnected(true)
+        setConnectionError(null)
+        retryCount = 0 // Reset retry count on successful connection
+        console.log('Connected to Chainlit successfully')
       } catch (error) {
-        console.error('Failed to connect to Chainlit:', error)
+        retryCount++
         setIsConnected(false)
+        
+        // Only log error details on first few attempts to avoid spam
+        if (retryCount <= 3) {
+          console.error(`Failed to connect to Chainlit (attempt ${retryCount}):`, error)
+        }
+        
+        const errorMessage = error instanceof Error ? error.message : 'Connection failed'
+        setConnectionError(`${errorMessage} (attempt ${retryCount}/${maxRetries})`)
+        
+        // Exponential backoff: 3s, 6s, 12s, 24s, 48s
+        const retryDelay = Math.min(3000 * Math.pow(2, retryCount - 1), 48000)
+        
+        if (retryCount < maxRetries) {
+          retryTimeout = setTimeout(connectToChainlit, retryDelay)
+        }
       }
     }
 
     connectToChainlit()
 
     return () => {
-      disconnect()
+      isConnecting = false
+      if (retryTimeout) {
+        clearTimeout(retryTimeout)
+      }
+      if (session) {
+        disconnect()
+      }
       setIsConnected(false)
     }
-  }, [connect, disconnect])
+  }, [connect, disconnect, session])
 
   // Extract game code from messages when a game is generated
   useEffect(() => {
@@ -66,10 +104,16 @@ function ChainlitChatInner({ onGameGenerated }: ChainlitChatProps) {
 
   if (!isConnected) {
     return (
-      <div className="flex items-center justify-center p-8 text-green-400">
-        <div className="animate-pulse">
+      <div className="flex flex-col items-center justify-center p-8 text-green-400">
+        <div className="animate-pulse mb-4">
           Connecting to Game Developer Agent...
         </div>
+        {connectionError && (
+          <div className="text-red-400 text-sm text-center">
+            <div>Connection Error: {connectionError}</div>
+            <div className="mt-2">Make sure the agents service is running on port 8000</div>
+          </div>
+        )}
       </div>
     )
   }
@@ -157,9 +201,5 @@ function MessageInput({ onSendMessage }: MessageInputProps) {
 }
 
 export function ChainlitChat({ onGameGenerated }: ChainlitChatProps) {
-  return (
-    <RecoilRoot>
-      <ChainlitChatInner onGameGenerated={onGameGenerated} />
-    </RecoilRoot>
-  )
+  return <ChainlitChatInner onGameGenerated={onGameGenerated} />
 }

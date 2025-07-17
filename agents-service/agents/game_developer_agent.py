@@ -60,25 +60,11 @@ DELIVERABLES:
 
 When asked to create a game, always provide a complete, playable implementation."""
     
-    def __init__(self, kernel: Kernel, service_id: str = "game_developer", use_claude_code: bool = True):
+    def __init__(self, kernel: Kernel, service_id: str = "game_developer"):
         self.kernel = kernel
         self.service_id = service_id
-        self.use_claude_code = use_claude_code
         self.agent = self._create_agent()
         self.chat_history = ChatHistory()
-        
-        # Try to get Claude Code bridge plugin from kernel
-        self.claude_code_bridge = None
-        if use_claude_code:
-            try:
-                # Look for the Claude Code bridge plugin
-                for plugin_name, plugin in kernel.plugins.items():
-                    if hasattr(plugin, 'generate_game_with_claude_code'):
-                        self.claude_code_bridge = plugin
-                        break
-            except Exception as e:
-                print(f"⚠️ Claude Code bridge not available: {e}")
-                self.use_claude_code = False
     
     def _create_agent(self) -> ChatCompletionAgent:
         """Create the game developer agent"""
@@ -90,6 +76,17 @@ When asked to create a game, always provide a complete, playable implementation.
                 instructions=self.AGENT_INSTRUCTIONS,
                 service_id=self.service_id
             )
+        except TypeError as e:
+            if "service_id" in str(e):
+                print(f"⚠️ Trying fallback ChatCompletionAgent creation: {e}")
+                # Fallback for different API without service_id
+                return ChatCompletionAgent(
+                    kernel=self.kernel,
+                    name=self.AGENT_NAME,
+                    instructions=self.AGENT_INSTRUCTIONS
+                )
+            else:
+                raise e
         except Exception as e:
             print(f"⚠️ Trying fallback ChatCompletionAgent creation: {e}")
             # Fallback for different API
@@ -102,29 +99,7 @@ When asked to create a game, always provide a complete, playable implementation.
     async def generate_game(self, prompt: str) -> Dict[str, Any]:
         """Generate a Phaser 3 game based on the prompt"""
         
-        # Try to use Claude Code SDK first if available
-        if self.use_claude_code and self.claude_code_bridge:
-            try:
-                print("🚀 Using Claude Code SDK for game generation...")
-                result = await self.claude_code_bridge.generate_game_with_claude_code(prompt)
-                
-                if result.get("success"):
-                    print("✅ Claude Code SDK generation successful")
-                    return {
-                        "success": True,
-                        "game_code": result.get("game_code", ""),
-                        "filename": result.get("filename", "game.html"),
-                        "summary": result.get("summary", "Game generated with Claude Code SDK"),
-                        "files_created": result.get("files_created", []),
-                        "messages": result.get("messages", [])
-                    }
-                else:
-                    print(f"⚠️ Claude Code SDK failed: {result.get('error')}, falling back to Semantic Kernel")
-            except Exception as e:
-                print(f"⚠️ Claude Code SDK error: {e}, falling back to Semantic Kernel")
-        
-        # Fallback to Semantic Kernel agent generation
-        print("🔄 Using Semantic Kernel agent for game generation...")
+        print("🎮 Generating game using Semantic Kernel agent...")
         
         # Enhanced prompt for game generation
         enhanced_prompt = f"""Create a Phaser 3 game based on this request: {prompt}
