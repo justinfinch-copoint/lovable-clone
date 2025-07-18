@@ -12,7 +12,7 @@ load_dotenv()
 from agents.game_developer_agent import GameDeveloperAgent
 from plugins.file_operations import FileOperationsPlugin
 from plugins.phaser_tools import PhaserToolsPlugin
-# Claude Code bridge removed - using Semantic Kernel agent only
+from plugins.claude_code_plugin import ClaudeCodePlugin
 
 # Configure Chainlit for React integration
 # Note: Configuration is now handled via config.toml and environment variables
@@ -28,7 +28,7 @@ async def start():
         # Create a welcome message with the app's capabilities
         welcome_message = """👋 Welcome to the **Phaser Game Generator**!
 
-I'm an AI agent specialized in creating Phaser 3 games. I can help you:
+I'm your game development project manager. I work with Claude Code to bring your game ideas to life! I can help you create:
 
 🎮 **Create Various Game Types:**
 - Platformers with physics and collision detection
@@ -70,9 +70,11 @@ What kind of game would you like me to create today?"""
             # Add plugins to kernel
             file_ops_plugin = FileOperationsPlugin(output_dir=os.getenv("OUTPUT_DIR", "./generated_games"))
             phaser_tools_plugin = PhaserToolsPlugin()
+            claude_code_plugin = ClaudeCodePlugin()
             
             kernel.add_plugin(file_ops_plugin, plugin_name="FileOperations")
             kernel.add_plugin(phaser_tools_plugin, plugin_name="PhaserTools")
+            kernel.add_plugin(claude_code_plugin, plugin_name="ClaudeCodePlugin")
             
             # Create game developer agent
             game_agent = GameDeveloperAgent(kernel, service_id)

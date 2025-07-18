@@ -17,3 +17,7 @@
 ## Git Workflow
 
 - Dont include claude code as an author when making git commits
+
+## Code Guidelines
+
+- Code files should NOT  be over 475 lines long.  If so refactor into multiple files

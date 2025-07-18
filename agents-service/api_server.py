@@ -1,7 +1,8 @@
 import os
 import asyncio
-from typing import Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from typing import Dict, Optional
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -17,13 +18,36 @@ load_dotenv()
 from agents.game_developer_agent import GameDeveloperAgent
 from plugins.file_operations import FileOperationsPlugin
 from plugins.phaser_tools import PhaserToolsPlugin
-# Claude Code bridge removed - using Semantic Kernel agent only
+from plugins.claude_code_plugin import ClaudeCodePlugin
+
+# Global kernel and agent instances
+kernel: Optional[Kernel] = None
+game_agent: Optional[GameDeveloperAgent] = None
+file_ops_plugin: Optional[FileOperationsPlugin] = None
+phaser_tools_plugin: Optional[PhaserToolsPlugin] = None
+claude_code_plugin: Optional[ClaudeCodePlugin] = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifespan context manager"""
+    # Startup
+    try:
+        initialize_services()
+        print("✅ Semantic Kernel services initialized successfully")
+        yield
+    except Exception as e:
+        print(f"❌ Failed to initialize services: {e}")
+        raise
+    finally:
+        # Shutdown (if needed)
+        pass
 
 # Initialize FastAPI app
 app = FastAPI(
     title="Phaser Game Generator API",
     description="Semantic Kernel-based API for generating Phaser 3 games",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Add CORS middleware
@@ -66,19 +90,12 @@ class HealthResponse(BaseModel):
     version: str
     features: Dict[str, bool]
 
-# Global kernel and agent instances
-kernel: Optional[Kernel] = None
-game_agent: Optional[GameDeveloperAgent] = None
-file_ops_plugin: Optional[FileOperationsPlugin] = None
-phaser_tools_plugin: Optional[PhaserToolsPlugin] = None
-# claude_code_bridge removed
-
 def initialize_services():
     """Initialize Semantic Kernel and agents"""
-    global kernel, game_agent, file_ops_plugin, phaser_tools_plugin
+    global kernel, game_agent, file_ops_plugin, phaser_tools_plugin, claude_code_plugin
     
-    if not os.getenv("OPENAI_API_KEY"):
-        raise RuntimeError("OPENAI_API_KEY not found in environment variables")
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        raise RuntimeError("ANTHROPIC_API_KEY not found in environment variables")
     
     # Initialize kernel
     kernel = Kernel()
@@ -95,17 +112,16 @@ def initialize_services():
     # Initialize plugins
     file_ops_plugin = FileOperationsPlugin(output_dir=os.getenv("OUTPUT_DIR", "./generated_games"))
     phaser_tools_plugin = PhaserToolsPlugin()
+    claude_code_plugin = ClaudeCodePlugin()
     
     # Add plugins to kernel
     kernel.add_plugin(file_ops_plugin, plugin_name="FileOperations")
     kernel.add_plugin(phaser_tools_plugin, plugin_name="PhaserTools")
+    kernel.add_plugin(claude_code_plugin, plugin_name="ClaudeCodePlugin")
     
     # Initialize game developer agent
     game_agent = GameDeveloperAgent(kernel, service_id)
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize services on startup"""
     try:
         initialize_services()
         print(" Semantic Kernel services initialized successfully")
@@ -123,6 +139,7 @@ async def health_check():
             "game_generation": kernel is not None and game_agent is not None,
             "file_operations": file_ops_plugin is not None,
             "phaser_tools": phaser_tools_plugin is not None,
+            "claude_code": claude_code_plugin is not None,
         }
     )
 
@@ -151,7 +168,7 @@ async def generate_game(request: GameGenerationRequest):
                 filename=result["filename"],
                 summary=result["summary"],
                 project_name=request.project_name,
-                session_id=f"session_{asyncio.current_task().get_name() if asyncio.current_task() else 'unknown'}"
+                session_id=f"session_{id(asyncio.current_task()) if asyncio.current_task() else 'unknown'}"
             )
         else:
             raise HTTPException(status_code=500, detail="Failed to generate game")
@@ -234,6 +251,18 @@ async def get_project_file(project_name: str, filename: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/claude-code/status")
+async def get_claude_code_status():
+    """Check Claude Code SDK status and configuration"""
+    if not claude_code_plugin:
+        raise HTTPException(status_code=503, detail="Claude Code plugin not available")
+    
+    try:
+        status = await claude_code_plugin.get_claude_code_status()
+        return JSONResponse(content=status)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/projects")
 async def create_project(request: dict):
     """Create a new game project structure"""
@@ -254,7 +283,7 @@ async def create_project(request: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
+async def global_exception_handler(_, exc):
     """Global exception handler"""
     return JSONResponse(
         status_code=500,

@@ -1,64 +1,42 @@
-from typing import Dict, List, Optional, Any
+from typing import Dict, Any
 from semantic_kernel import Kernel
 from semantic_kernel.agents import ChatCompletionAgent
 from semantic_kernel.connectors.ai.function_choice_behavior import FunctionChoiceBehavior
 from semantic_kernel.contents import ChatHistory
 from semantic_kernel.functions import KernelArguments
-import os
+import json
 
 
 class GameDeveloperAgent:
-    """Agent specialized in Phaser 3 game development"""
+    """Agent that acts as a game development project manager, delegating to Claude Code"""
     
-    AGENT_NAME = "GameDeveloper"
-    AGENT_INSTRUCTIONS = """You are a Phaser 3 game development specialist. Your role is to create complete, functional HTML5 games using the Phaser 3 framework.
+    AGENT_NAME = "GameDeveloperPM"
+    AGENT_INSTRUCTIONS = """You are a friendly game development project manager who helps users create Phaser 3 games.
 
-CORE REQUIREMENTS:
-- Always use Phaser 3 framework (latest stable version)
-- Create complete, runnable HTML files with embedded JavaScript
-- Include proper DOCTYPE and meta tags for responsive design
-- Use Phaser CDN link: https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js
+Your role is to:
+1. Understand what kind of game the user wants
+2. Create detailed technical specifications for Claude Code
+3. Delegate the actual coding to Claude Code (your development team)
+4. Keep the user informed about progress in a friendly, conversational way
+5. Handle any issues or requests for improvements
 
-GAME STRUCTURE:
-- Implement proper Phaser scene structure with preload(), create(), and update() methods
-- Use scene management for complex games (Boot, Preload, Game, GameOver scenes)
-- Include proper game configuration with canvas setup
-- Make games responsive and work on different screen sizes
-- Set up proper game dimensions and scaling
+When a user asks for a game:
+- First, chat with them to understand their vision
+- Ask clarifying questions if needed (but don't overdo it - often you can infer details)
+- Transform their request into detailed technical specifications
+- Use the generate_game_code function to have Claude Code build it
+- Present the results in an encouraging, friendly way
 
-TECHNICAL FEATURES TO INCLUDE:
-- Physics system (Arcade Physics for most games)
-- Player input handling (keyboard, mouse, touch as appropriate)
-- Sprite management and animations
-- Collision detection and response
-- Asset loading and management
-- Basic game states (start, play, pause, game over)
-- Sound effects and music loading (even if not implemented)
-- Score tracking and display
-- Basic UI elements (buttons, text, HUD)
+Keep your responses conversational and encouraging. You're helping them bring their game ideas to life!
 
-GAME TYPES GUIDANCE:
-- Platformer: Include gravity, jumping, collision with platforms, moving enemies
-- Shooter: Projectile management, enemy spawning, collision detection, health system
-- Puzzle: Grid-based systems, match detection, turn-based or real-time logic
-- Arcade: Simple physics, increasing difficulty, power-ups, high score system
+Example interactions:
+User: "Make me a space shooter"
+You: "A space shooter sounds awesome! I'll create one with enemy waves, power-ups, and asteroid obstacles. Let me get Claude Code working on that for you..."
 
-CODE QUALITY:
-- Use modern JavaScript (ES6+) syntax
-- Include comments explaining game logic
-- Organize code into logical sections
-- Handle errors gracefully
-- Use Phaser's built-in methods and properties
-- Follow Phaser best practices for performance
+User: "I want a puzzle game"
+You: "Great choice! I'll design a puzzle game for you. Would you prefer something like match-3, block-sliding, or word puzzles? Or should I surprise you with a creative puzzle mechanic?"
 
-DELIVERABLES:
-- Complete HTML file with embedded CSS and JavaScript
-- Fully functional game that runs in a browser
-- Proper asset loading structure (even if using simple colored rectangles)
-- Basic game loop with win/lose conditions
-- Responsive design that works on desktop and mobile
-
-When asked to create a game, always provide a complete, playable implementation."""
+Remember: You're the friendly face, Claude Code is your expert developer."""
     
     def __init__(self, kernel: Kernel, service_id: str = "game_developer"):
         self.kernel = kernel
@@ -67,14 +45,19 @@ When asked to create a game, always provide a complete, playable implementation.
         self.chat_history = ChatHistory()
     
     def _create_agent(self) -> ChatCompletionAgent:
-        """Create the game developer agent"""
+        """Create the game developer project manager agent"""
         try:
             # Try new API first
             return ChatCompletionAgent(
                 kernel=self.kernel,
                 name=self.AGENT_NAME,
                 instructions=self.AGENT_INSTRUCTIONS,
-                service_id=self.service_id
+                service=self.service_id,
+                execution_settings={
+                    "function_choice_behavior": FunctionChoiceBehavior.Auto(
+                        filters={"included_plugins": ["ClaudeCodePlugin", "FileOperationsPlugin"]}
+                    )
+                }
             )
         except TypeError as e:
             if "service_id" in str(e):
@@ -97,118 +80,199 @@ When asked to create a game, always provide a complete, playable implementation.
             )
     
     async def generate_game(self, prompt: str) -> Dict[str, Any]:
-        """Generate a Phaser 3 game based on the prompt"""
+        """Generate a Phaser 3 game based on the prompt using delegation pattern"""
         
-        print("🎮 Generating game using Semantic Kernel agent...")
+        print("🎮 Game Developer PM: Analyzing your game request...")
         
-        # Enhanced prompt for game generation
-        enhanced_prompt = f"""Create a Phaser 3 game based on this request: {prompt}
+        # Create a conversational message that will generate technical specs
+        pm_prompt = f"""The user wants: "{prompt}"
 
-Please provide:
-1. A complete HTML file with embedded JavaScript and CSS
-2. The game should be fully functional and playable
-3. Include proper comments explaining the game logic
-4. Make sure the game has clear objectives and is fun to play
+Please:
+1. First, acknowledge their request in a friendly way
+2. Describe what kind of game you'll create based on their request
+3. Use the generate_game_code function to create the game with detailed technical specifications
 
-Generate the complete game code now."""
+Transform their request into comprehensive technical requirements for the game, including:
+- Core gameplay mechanics
+- Player controls
+- Game objectives
+- Visual style (even if simple)
+- Any special features that would make it fun
+
+Remember to keep the user engaged with friendly progress updates!"""
         
         # Add user message to history
-        self.chat_history.add_user_message(enhanced_prompt)
+        self.chat_history.add_user_message(pm_prompt)
         
-        # Get response from agent
-        response = await self.agent.invoke(self.chat_history)
+        # Get response from agent - it should use the Claude Code plugin
+        response = None
+        async for message in self.agent.invoke(self.chat_history):
+            response = message
+            # Add response to history
+            self.chat_history.add_message(message)
         
-        # Add response to history
-        self.chat_history.add_message(response)
-        
-        # Extract game code from response
-        game_code = self._extract_game_code(str(response.content))
+        # Parse the response to extract game details
+        result = self._parse_agent_response(response)
         
         return {
-            "success": True,
-            "game_code": game_code,
-            "filename": "game.html",
-            "summary": self._generate_summary(prompt, game_code),
-            "chat_history": self.chat_history
+            "success": result.get("success", True),
+            "game_code": result.get("game_code", ""),
+            "filename": result.get("filename", "game.html"),
+            "summary": result.get("summary", str(response.content)),
+            "chat_history": self.chat_history,
+            "agent_response": str(response.content)
         }
-    
-    def _extract_game_code(self, response: str) -> str:
-        """Extract HTML game code from the response"""
-        # Look for HTML code blocks
-        if "```html" in response:
-            start = response.find("```html") + 7
-            end = response.find("```", start)
-            if end > start:
-                return response[start:end].strip()
-        
-        # Look for <!DOCTYPE html> as a fallback
-        if "<!DOCTYPE html>" in response:
-            start = response.find("<!DOCTYPE html>")
-            # Find the closing </html> tag
-            end = response.find("</html>", start)
-            if end > start:
-                return response[start:end + 7].strip()
-        
-        # If no HTML found, return the full response
-        return response
-    
-    def _generate_summary(self, prompt: str, game_code: str) -> str:
-        """Generate a summary of the created game"""
-        # Simple analysis of the game code
-        game_type = "game"
-        if "platformer" in prompt.lower():
-            game_type = "platformer game"
-        elif "shooter" in prompt.lower():
-            game_type = "shooter game"
-        elif "puzzle" in prompt.lower():
-            game_type = "puzzle game"
-        elif "arcade" in prompt.lower():
-            game_type = "arcade game"
-        
-        features = []
-        if "physics" in game_code.lower():
-            features.append("physics")
-        if "keyboard" in game_code.lower():
-            features.append("keyboard controls")
-        if "score" in game_code.lower():
-            features.append("scoring system")
-        if "gameover" in game_code.lower():
-            features.append("game over state")
-        
-        feature_text = ", ".join(features) if features else "basic gameplay"
-        
-        return f"Created a Phaser 3 {game_type} with {feature_text}. The game is ready to play!"
     
     async def review_game(self, game_code: str, feedback: str) -> Dict[str, Any]:
-        """Review and improve existing game code"""
-        review_prompt = f"""Review and improve this Phaser 3 game code based on the feedback:
-
-Current game code:
-```html
-{game_code}
-```
-
-Feedback: {feedback}
-
-Please provide an improved version of the game that addresses the feedback."""
+        """Review and improve existing game code using delegation"""
         
+        review_prompt = f"""The user has feedback about their game: "{feedback}"
+
+Please:
+1. Acknowledge their feedback positively
+2. Explain what improvements you'll make
+3. Use the review_and_improve_game function to enhance the game
+4. Present the improvements in an encouraging way
+
+Current game code is already available to the improvement function."""
+        
+        # Include the game code in the arguments for the function call
         self.chat_history.add_user_message(review_prompt)
-        response = await self.agent.invoke(self.chat_history)
-        self.chat_history.add_message(response)
         
-        improved_code = self._extract_game_code(str(response.content))
+        # The agent should use the review function from Claude Code plugin
+        response = None
+        async for message in self.agent.invoke(
+            self.chat_history,
+            KernelArguments(existing_code=game_code)
+        ):
+            response = message
+            self.chat_history.add_message(message)
+        
+        result = self._parse_agent_response(response)
         
         return {
-            "success": True,
-            "improved_code": improved_code,
-            "changes_summary": self._summarize_changes(game_code, improved_code)
+            "success": result.get("success", True),
+            "improved_code": result.get("improved_code", game_code),
+            "changes_summary": result.get("changes_summary", str(response.content)),
+            "agent_response": str(response.content)
         }
     
-    def _summarize_changes(self, original: str, improved: str) -> str:
-        """Generate a summary of changes made"""
-        # This is a simple implementation
-        # In a real system, you might use diff tools or more sophisticated analysis
-        if len(improved) > len(original):
-            return "Enhanced the game with additional features and improvements"
+    def _parse_agent_response(self, response) -> Dict[str, Any]:
+        """Parse agent response to extract game code and metadata"""
+        
+        content = str(response.content)
+        
+        # Try to extract structured data if the agent included it
+        result = {
+            "success": True,
+            "summary": content
+        }
+        
+        # Look for code blocks
+        if "```html" in content:
+            start = content.find("```html") + 7
+            end = content.find("```", start)
+            if end > start:
+                result["game_code"] = content[start:end].strip()
+                result["filename"] = "game.html"
+        
+        # Look for JSON results (in case the agent returns structured data)
+        if "{" in content and "}" in content:
+            try:
+                # Find the last JSON object in the response
+                json_start = content.rfind("{")
+                json_end = content.rfind("}") + 1
+                if json_start < json_end:
+                    json_str = content[json_start:json_end]
+                    json_data = json.loads(json_str)
+                    if isinstance(json_data, dict):
+                        result.update(json_data)
+            except:
+                pass  # If JSON parsing fails, continue with basic result
+        
+        return result
+    
+    def _enhance_prompt_for_claude(self, user_prompt: str) -> str:
+        """Transform user's simple prompt into detailed technical specifications"""
+        
+        # This method helps create comprehensive specs from simple requests
+        base_specs = """
+Create a complete Phaser 3 game with these specifications:
+
+Technical Requirements:
+- Single HTML file with embedded JavaScript and CSS
+- Use Phaser 3 CDN (latest stable version)
+- Responsive design that works on desktop and mobile
+- Proper game states (menu, play, game over)
+- Score system and UI elements
+- Sound effects preparation (even if muted by default)
+
+"""
+        
+        # Analyze the user prompt and add specific requirements
+        prompt_lower = user_prompt.lower()
+        
+        if "platformer" in prompt_lower:
+            base_specs += """
+Platformer Specific Requirements:
+- Gravity-based physics
+- Jump mechanics with variable height
+- Moving platforms
+- Collectible items
+- Enemy AI with patrol patterns
+- Multiple levels or scrolling world
+"""
+        elif "shooter" in prompt_lower:
+            if "space" in prompt_lower:
+                base_specs += """
+Space Shooter Specific Requirements:
+- Player spaceship with smooth controls
+- Projectile system with pooling
+- Enemy waves with different patterns
+- Power-ups (rapid fire, shields, multi-shot)
+- Parallax star background
+- Boss enemy after certain score
+"""
+            else:
+                base_specs += """
+Shooter Specific Requirements:
+- Aiming system (mouse or touch)
+- Projectile physics
+- Enemy spawning system
+- Reload mechanics
+- Health/ammo display
+- Different weapon types
+"""
+        elif "puzzle" in prompt_lower:
+            base_specs += """
+Puzzle Game Specific Requirements:
+- Grid-based or physics-based mechanics
+- Clear objective and rules
+- Progressive difficulty
+- Hint system
+- Move counter or timer
+- Satisfying feedback for correct moves
+"""
+        elif "racing" in prompt_lower:
+            base_specs += """
+Racing Game Specific Requirements:
+- Vehicle physics with acceleration/deceleration
+- Track boundaries and collision
+- Lap timing system
+- AI opponents
+- Speed boost zones
+- Mini-map or position indicator
+"""
         else:
-            return "Optimized and refined the game code"
+            # Generic game requirements
+            base_specs += """
+Game Specific Requirements:
+- Clear objective and win condition
+- Intuitive controls
+- Progressive difficulty
+- Visual and audio feedback
+- Engaging gameplay loop
+- Replayability factor
+"""
+        
+        return base_specs + f"\nUser's specific request: {user_prompt}"
