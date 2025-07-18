@@ -4,6 +4,10 @@ from dotenv import load_dotenv
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
 from semantic_kernel.contents import ChatHistory
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 
 # Load environment variables
 load_dotenv()
@@ -23,7 +27,7 @@ async def start():
     """Initialize the chat session"""
     try:
         # Clear any existing session data first
-        cl.user_session.clear()
+        # Note: Chainlit doesn't have a clear() method, so we'll skip this
         
         # Create a welcome message with the app's capabilities
         welcome_message = """👋 Welcome to the **Phaser Game Generator**!
@@ -52,7 +56,7 @@ Simply describe the game you want to create! For example:
 
 What kind of game would you like me to create today?"""
         
-        await cl.Message(content=welcome_message).send()
+        await cl.Message(content=welcome_message, author="assistant").send()
         
         # Initialize the kernel and store in session
         kernel = Kernel()
@@ -84,7 +88,8 @@ What kind of game would you like me to create today?"""
             cl.user_session.set("game_agent", game_agent)
         else:
             await cl.Message(
-                content="⚠️ OpenAI API key not found. Please set OPENAI_API_KEY in your .env file."
+                content="⚠️ OpenAI API key not found. Please set OPENAI_API_KEY in your .env file.",
+                author="assistant"
             ).send()
         
         # Initialize chat history
@@ -94,7 +99,8 @@ What kind of game would you like me to create today?"""
     except Exception as e:
         print(f"Error during session initialization: {e}")
         await cl.Message(
-            content=f"❌ Error initializing session: {str(e)}"
+            content=f"❌ Error initializing session: {str(e)}",
+            author="assistant"
         ).send()
 
 
@@ -102,16 +108,51 @@ What kind of game would you like me to create today?"""
 async def main(message: cl.Message):
     """Handle incoming messages"""
     try:
+        # Log the incoming message for debugging
+        logging.info(f"Received message: {message}")
+        
+        # Ensure message has content
+        if not hasattr(message, 'content') or not message.content:
+            logging.warning("Message has no content")
+            return
+        # Handle special commands
+        if message.content.startswith("/"):
+            command = message.content.lower().strip()
+            
+            if command == "/clear":
+                # Clear the chat history
+                chat_history = ChatHistory()
+                cl.user_session.set("chat_history", chat_history)
+                await cl.Message(content="✅ Chat history cleared. Ready for a new game idea!", author="assistant").send()
+                return
+            elif command == "/help":
+                help_text = """📚 **Available Commands:**
+                
+/clear - Clear the chat history
+/help - Show this help message
+
+**Game Creation Tips:**
+- Be specific about game mechanics
+- Mention desired features (scoring, levels, etc.)
+- Specify visual style preferences
+- Include any special interactions needed"""
+                await cl.Message(content=help_text, author="assistant").send()
+                return
+            else:
+                await cl.Message(content=f"❌ Unknown command: {command}. Type /help for available commands.", author="assistant").send()
+                return
+        
         game_agent = cl.user_session.get("game_agent")
         
         if not game_agent:
             await cl.Message(
-                content="❌ Session not properly initialized. Please refresh the page."
+                content="❌ Session not properly initialized. Please refresh the page.",
+                author="assistant"
             ).send()
             return
         
         # Send initial status message
-        status_msg = await cl.Message(content="🤔 Planning your game development...").send()
+        await cl.Message(content="🤔 Planning your game development...", author="assistant").send()
         
         # Generate the game using our agent
         result = await game_agent.generate_game(message.content)
@@ -120,6 +161,7 @@ async def main(message: cl.Message):
             # Show the generated game code
             await cl.Message(
                 content=f"🎮 **Game Created!**\n\n{result['summary']}",
+                author="assistant",
                 elements=[
                     cl.Text(
                         name=result["filename"],
@@ -131,18 +173,21 @@ async def main(message: cl.Message):
             ).send()
             
             await cl.Message(
-                content="🚀 **Your game is ready!** Copy the code above and save it as an HTML file to play your game."
+                content="🚀 **Your game is ready!** Copy the code above and save it as an HTML file to play your game.",
+                author="assistant"
             ).send()
             
         else:
             await cl.Message(
-                content="❌ Sorry, I couldn't generate the game. Please try again with a different request."
+                content="❌ Sorry, I couldn't generate the game. Please try again with a different request.",
+                author="assistant"
             ).send()
             
     except Exception as e:
         print(f"Error in message handler: {e}")
         await cl.Message(
-            content=f"❌ An error occurred while generating the game: {str(e)}"
+            content=f"❌ An error occurred while generating the game: {str(e)}",
+            author="assistant"
         ).send()
 
 

@@ -9,15 +9,16 @@ from datetime import datetime
 
 from semantic_kernel.functions import kernel_function
 from semantic_kernel.kernel_pydantic import KernelBaseModel
-from claude_code_sdk import query, ClaudeCodeOptions, Message, Tool
+from claude_code_sdk import query, ClaudeCodeOptions, Message
 
 
 class ClaudeCodePlugin(KernelBaseModel):
     """Plugin for delegating code generation to Claude Code SDK"""
     
-    def __init__(self):
-        super().__init__()
-        self.working_dir = Path("/tmp/claude_code_workspace")
+    working_dir: Path = Path("/tmp/claude_code_workspace")
+    
+    def __init__(self, **data):
+        super().__init__(**data)
         self.working_dir.mkdir(exist_ok=True)
         
     @kernel_function(
@@ -67,15 +68,15 @@ File naming: Always save the game as 'game.html' unless specified otherwise."""
                 system_prompt=system_prompt,
                 cwd=project_dir,
                 allowed_tools=[
-                    Tool.Write,
-                    Tool.Read,
-                    Tool.Edit,
-                    Tool.MultiEdit,
-                    Tool.Bash,
-                    Tool.LS,
-                    Tool.Glob
+                    "Write",
+                    "Read", 
+                    "Edit",
+                    "MultiEdit",
+                    "Bash",
+                    "LS",
+                    "Glob"
                 ],
-                permission_mode="autoAccept"  # Auto-accept edits for automation
+                permission_mode="bypassPermissions"  # Auto-accept edits for automation
             )
             
             # Enhanced prompt with file creation instruction
@@ -195,14 +196,14 @@ Focus on:
                 system_prompt=system_prompt,
                 cwd=project_dir,
                 allowed_tools=[
-                    Tool.Read,
-                    Tool.Write,
-                    Tool.Edit,
-                    Tool.MultiEdit,
-                    Tool.Bash,
-                    Tool.LS
+                    "Read",
+                    "Write",
+                    "Edit",
+                    "MultiEdit",
+                    "Bash",
+                    "LS"
                 ],
-                permission_mode="autoAccept"
+                permission_mode="bypassPermissions"
             )
             
             improvement_prompt = f"""Please review and improve the game in 'current_game.html'.

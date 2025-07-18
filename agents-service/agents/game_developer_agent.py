@@ -1,17 +1,13 @@
 from typing import Dict, Any
 from semantic_kernel import Kernel
-from semantic_kernel.agents import ChatCompletionAgent
-from semantic_kernel.connectors.ai.function_choice_behavior import FunctionChoiceBehavior
-from semantic_kernel.contents import ChatHistory
-from semantic_kernel.functions import KernelArguments
+from semantic_kernel.contents import ChatHistory, ChatMessageContent, AuthorRole
 import json
 
 
 class GameDeveloperAgent:
     """Agent that acts as a game development project manager, delegating to Claude Code"""
     
-    AGENT_NAME = "GameDeveloperPM"
-    AGENT_INSTRUCTIONS = """You are a friendly game development project manager who helps users create Phaser 3 games.
+    SYSTEM_MESSAGE = """You are a friendly game development project manager who helps users create Phaser 3 games.
 
 Your role is to:
 1. Understand what kind of game the user wants
@@ -41,43 +37,14 @@ Remember: You're the friendly face, Claude Code is your expert developer."""
     def __init__(self, kernel: Kernel, service_id: str = "game_developer"):
         self.kernel = kernel
         self.service_id = service_id
-        self.agent = self._create_agent()
         self.chat_history = ChatHistory()
-    
-    def _create_agent(self) -> ChatCompletionAgent:
-        """Create the game developer project manager agent"""
-        try:
-            # Try new API first
-            return ChatCompletionAgent(
-                kernel=self.kernel,
-                name=self.AGENT_NAME,
-                instructions=self.AGENT_INSTRUCTIONS,
-                service=self.service_id,
-                execution_settings={
-                    "function_choice_behavior": FunctionChoiceBehavior.Auto(
-                        filters={"included_plugins": ["ClaudeCodePlugin", "FileOperationsPlugin"]}
-                    )
-                }
-            )
-        except TypeError as e:
-            if "service_id" in str(e):
-                print(f"⚠️ Trying fallback ChatCompletionAgent creation: {e}")
-                # Fallback for different API without service_id
-                return ChatCompletionAgent(
-                    kernel=self.kernel,
-                    name=self.AGENT_NAME,
-                    instructions=self.AGENT_INSTRUCTIONS
-                )
-            else:
-                raise e
-        except Exception as e:
-            print(f"⚠️ Trying fallback ChatCompletionAgent creation: {e}")
-            # Fallback for different API
-            return ChatCompletionAgent(
-                kernel=self.kernel,
-                name=self.AGENT_NAME,
-                instructions=self.AGENT_INSTRUCTIONS
-            )
+        
+        # Add system message to chat history
+        system_message = ChatMessageContent(
+            role=AuthorRole.SYSTEM,
+            content=self.SYSTEM_MESSAGE
+        )
+        self.chat_history.add_message(system_message)
     
     async def generate_game(self, prompt: str) -> Dict[str, Any]:
         """Generate a Phaser 3 game based on the prompt using delegation pattern"""
@@ -102,26 +69,52 @@ Transform their request into comprehensive technical requirements for the game, 
 Remember to keep the user engaged with friendly progress updates!"""
         
         # Add user message to history
-        self.chat_history.add_user_message(pm_prompt)
+        user_message = ChatMessageContent(
+            role=AuthorRole.USER,
+            content=pm_prompt
+        )
+        self.chat_history.add_message(user_message)
         
-        # Get response from agent - it should use the Claude Code plugin
-        response = None
-        async for message in self.agent.invoke(self.chat_history):
-            response = message
-            # Add response to history
-            self.chat_history.add_message(message)
-        
-        # Parse the response to extract game details
-        result = self._parse_agent_response(response)
-        
-        return {
-            "success": result.get("success", True),
-            "game_code": result.get("game_code", ""),
-            "filename": result.get("filename", "game.html"),
-            "summary": result.get("summary", str(response.content)),
-            "chat_history": self.chat_history,
-            "agent_response": str(response.content)
-        }
+        # Get response from kernel using chat completion
+        try:
+            chat_completion_service = self.kernel.get_service(self.service_id)
+            result = await chat_completion_service.get_chat_message_contents(
+                chat_history=self.chat_history,
+                settings=chat_completion_service.get_prompt_execution_settings_class()(
+                    function_choice_behavior="auto"
+                ),
+                kernel=self.kernel
+            )
+            
+            if result:
+                response = result[0]  # Get first response
+                # Add response to history
+                self.chat_history.add_message(response)
+                
+                # Parse the response to extract game details
+                parsed_result = self._parse_agent_response(response)
+                
+                return {
+                    "success": parsed_result.get("success", True),
+                    "game_code": parsed_result.get("game_code", ""),
+                    "filename": parsed_result.get("filename", "game.html"),
+                    "summary": parsed_result.get("summary", str(response.content)),
+                    "chat_history": self.chat_history,
+                    "agent_response": str(response.content)
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "No response from AI service",
+                    "chat_history": self.chat_history
+                }
+        except Exception as e:
+            print(f"❌ Error generating game: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "chat_history": self.chat_history
+            }
     
     async def review_game(self, game_code: str, feedback: str) -> Dict[str, Any]:
         """Review and improve existing game code using delegation"""
@@ -134,33 +127,59 @@ Please:
 3. Use the review_and_improve_game function to enhance the game
 4. Present the improvements in an encouraging way
 
-Current game code is already available to the improvement function."""
+Current game code: {game_code[:500]}... (truncated)"""
         
-        # Include the game code in the arguments for the function call
-        self.chat_history.add_user_message(review_prompt)
+        # Add user message to history
+        user_message = ChatMessageContent(
+            role=AuthorRole.USER,
+            content=review_prompt
+        )
+        self.chat_history.add_message(user_message)
         
-        # The agent should use the review function from Claude Code plugin
-        response = None
-        async for message in self.agent.invoke(
-            self.chat_history,
-            KernelArguments(existing_code=game_code)
-        ):
-            response = message
-            self.chat_history.add_message(message)
-        
-        result = self._parse_agent_response(response)
-        
-        return {
-            "success": result.get("success", True),
-            "improved_code": result.get("improved_code", game_code),
-            "changes_summary": result.get("changes_summary", str(response.content)),
-            "agent_response": str(response.content)
-        }
+        # Get response from kernel using chat completion
+        try:
+            chat_completion_service = self.kernel.get_service(self.service_id)
+            result = await chat_completion_service.get_chat_message_contents(
+                chat_history=self.chat_history,
+                settings=chat_completion_service.get_prompt_execution_settings_class()(
+                    function_choice_behavior="auto"
+                ),
+                kernel=self.kernel
+            )
+            
+            if result:
+                response = result[0]  # Get first response
+                # Add response to history
+                self.chat_history.add_message(response)
+                
+                # Parse the response to extract game details
+                parsed_result = self._parse_agent_response(response)
+                
+                return {
+                    "success": parsed_result.get("success", True),
+                    "improved_code": parsed_result.get("improved_code", game_code),
+                    "changes_summary": parsed_result.get("changes_summary", str(response.content)),
+                    "agent_response": str(response.content)
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "No response from AI service"
+                }
+        except Exception as e:
+            print(f"❌ Error reviewing game: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
     
     def _parse_agent_response(self, response) -> Dict[str, Any]:
         """Parse agent response to extract game code and metadata"""
         
-        content = str(response.content)
+        if hasattr(response, 'content'):
+            content = str(response.content)
+        else:
+            content = str(response)
         
         # Try to extract structured data if the agent included it
         result = {

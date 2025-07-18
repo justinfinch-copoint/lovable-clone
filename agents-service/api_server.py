@@ -121,13 +121,8 @@ def initialize_services():
     
     # Initialize game developer agent
     game_agent = GameDeveloperAgent(kernel, service_id)
-
-    try:
-        initialize_services()
-        print(" Semantic Kernel services initialized successfully")
-    except Exception as e:
-        print(f"L Failed to initialize services: {e}")
-        raise
+    
+    print(" Semantic Kernel services initialized successfully")
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
